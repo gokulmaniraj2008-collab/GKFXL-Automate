@@ -109,10 +109,8 @@ private fun GKFXLApp() {
                 }
                 1 -> Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("WhatsApp accounts", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-                    Text("Configure Messenger and Business independently. Notification access is granted once for this app.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    val notificationPrefs = remember { context.getSharedPreferences("whatsapp_notifications", Context.MODE_PRIVATE) }
+                    Text("GKFXL Automate supports WhatsApp Business only. Notification access is granted once for this app.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-                    WhatsAppAppSettings(context, "messenger", "WhatsApp Messenger")
                     WhatsAppAppSettings(context, "business", "WhatsApp Business")
                     OutlinedButton(onClick = { context.startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")) }, modifier = Modifier.fillMaxWidth()) { Text("Grant notification access") }
                     Text("Privacy: notification contents are stored locally in app preferences. Gemini-generated replies are not enabled in this build. Approval mode prevents automatic sending; turn it off only when you intentionally want unattended replies. Auto-replies have a 10-minute per-sender cooldown.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -124,7 +122,7 @@ private fun GKFXLApp() {
                     Button(onClick = {
                         val digits = phone.filter { it.isDigit() }
                         if (digits.isBlank() || message.isBlank()) status = "Enter a phone number and message."
-                        else try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$digits?text=" + Uri.encode(message)))) } catch (_: Exception) { status = "WhatsApp could not be opened. Install or enable WhatsApp." }
+                        else try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$digits?text=" + Uri.encode(message))).setPackage("com.whatsapp.w4b")) } catch (_: Exception) { status = "WhatsApp could not be opened. Install or enable WhatsApp." }
                     }, modifier = Modifier.fillMaxWidth()) { Text("Open WhatsApp") }
                     HorizontalDivider()
                     Text("Accessibility send assist (optional)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
@@ -147,7 +145,7 @@ private fun GKFXLApp() {
                             context.getSharedPreferences("whatsapp_safety", Context.MODE_PRIVATE).edit()
                                 .putString("armed_message", message.trim())
                                 .putLong("armed_until", System.currentTimeMillis() + 60_000L).apply()
-                            try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$digits?text=" + Uri.encode(message.trim())))) }
+                            try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$digits?text=" + Uri.encode(message.trim()))).setPackage("com.whatsapp.w4b")) }
                             catch (_: Exception) { status = "Could not open WhatsApp." }
                         }
                     }, modifier = Modifier.fillMaxWidth()) { Text("Arm one send (60 seconds) & open WhatsApp") }
@@ -171,7 +169,7 @@ private fun GKFXLApp() {
             AlertDialog(
                 onDismissRequest = { showAccessibilityDisclosure = false },
                 title = { Text("Accessibility send assist - disclosure") },
-                text = { Text("GKFXL Automate uses Android Accessibility access to inspect the visible WhatsApp Messenger screen for the exact message you explicitly arm. If that exact text is in the message composer, it can tap the visible Send button. It does not open chats or compose messages. The one-shot arm expires after 60 seconds and is consumed before the tap. Screen inspection is processed on this device by this service. Only continue if you understand and accept this behavior.") },
+                text = { Text("GKFXL Automate uses Android Accessibility access to inspect the visible WhatsApp Business screen for the exact message you explicitly arm. If that exact text is in the message composer, it can tap the visible Send button. It does not open chats or compose messages. The one-shot arm expires after 60 seconds and is consumed before the tap. Screen inspection is processed on this device by this service. Only continue if you understand and accept this behavior.") },
                 confirmButton = {
                     TextButton(onClick = {
                         showAccessibilityDisclosure = false
