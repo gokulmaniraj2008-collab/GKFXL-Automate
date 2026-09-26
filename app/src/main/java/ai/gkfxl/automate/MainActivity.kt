@@ -30,7 +30,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Calendar
 
-data class AutomationRule(val id: Long, val title: String, val hour: Int, val minute: Int, val recurring: Boolean, val enabled: Boolean)
+data class AutomationRule(val id: Long, val title: String, val hour: Int, val minute: Int, val recurring: Boolean, val enabled: Boolean, val phone: String = "", val message: String = "")
 
 class MainActivity : ComponentActivity() {
     private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -71,11 +71,16 @@ private fun GKFXLApp() {
                         OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Rule name") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                         OutlinedTextField(value = time, onValueChange = { time = it }, label = { Text("Time (24-hour HH:mm)") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                         Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(checked = recurring, onCheckedChange = { recurring = it }); Text("Repeat every day") }
+                        Text("Optional WhatsApp reminder", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("WhatsApp number (with country code)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone), modifier = Modifier.fillMaxWidth(), singleLine = true)
+                        OutlinedTextField(value = message, onValueChange = { message = it }, label = { Text("Message to prepare") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
+                        Text("At the scheduled time, a notification appears. Tap it to open WhatsApp with the message ready; you still need to tap Send.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Button(onClick = {
                             val parts = time.split(":"); val hour = parts.getOrNull(0)?.toIntOrNull(); val minute = parts.getOrNull(1)?.toIntOrNull()
                             if (title.isBlank() || hour == null || minute == null || hour !in 0..23 || minute !in 0..59) status = "Enter a name and valid time, such as 19:00."
                             else {
-                                val rule = AutomationRule(System.currentTimeMillis(), title.trim(), hour, minute, recurring, true)
+                                val digits = phone.filter { it.isDigit() }; val cleanPhone = if (digits.startsWith("00")) digits.drop(2) else digits
+                                val rule = AutomationRule(System.currentTimeMillis(), title.trim(), hour, minute, recurring, true, cleanPhone, message.trim())
                                 rules = rules + rule; saveRules(context, rules); schedule(context, rule)
                                 status = "Reminder saved. Check Android alarm and notification permissions."
                             }
@@ -85,7 +90,7 @@ private fun GKFXLApp() {
                     if (rules.isEmpty()) item { Text("No rules yet. Create your first reminder above.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     items(rules, key = { it.id }) { rule -> Card { Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Column(Modifier.weight(1f)) { Text(rule.title, fontWeight = FontWeight.SemiBold); Text("%02d:%02d • %s".format(rule.hour, rule.minute, if (rule.recurring) "Daily" else "One time"), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                            Column(Modifier.weight(1f)) { Text(rule.title, fontWeight = FontWeight.SemiBold); Text("%02d:%02d • %s".format(rule.hour, rule.minute, if (rule.recurring) "Daily" else "One time"), color = MaterialTheme.colorScheme.onSurfaceVariant); if (rule.phone.isNotBlank()) Text("WhatsApp: ${rule.phone}", style = MaterialTheme.typography.bodySmall) }
                             Switch(checked = rule.enabled, onCheckedChange = { enabled ->
                                 val updated = rules.map { if (it.id == rule.id) it.copy(enabled = enabled) else it }; rules = updated; saveRules(context, updated)
                                 if (enabled) schedule(context, rule.copy(enabled = true)) else cancel(context, rule)
@@ -124,17 +129,17 @@ private fun GKFXLApp() {
 
 private fun loadRules(context: Context): List<AutomationRule> = try {
     val array = JSONArray(context.getSharedPreferences("rules", Context.MODE_PRIVATE).getString("items", "[]"))
-    (0 until array.length()).map { i -> val o = array.getJSONObject(i); AutomationRule(o.getLong("id"), o.getString("title"), o.getInt("hour"), o.getInt("minute"), o.getBoolean("recurring"), o.getBoolean("enabled")) }
+    (0 until array.length()).map { i -> val o = array.getJSONObject(i); AutomationRule(o.getLong("id"), o.getString("title"), o.getInt("hour"), o.getInt("minute"), o.getBoolean("recurring"), o.getBoolean("enabled"), o.optString("phone", ""), o.optString("message", "")) }
 } catch (_: Exception) { emptyList() }
 
 private fun saveRules(context: Context, rules: List<AutomationRule>) {
     val array = JSONArray()
-    rules.forEach { r -> array.put(JSONObject().put("id", r.id).put("title", r.title).put("hour", r.hour).put("minute", r.minute).put("recurring", r.recurring).put("enabled", r.enabled)) }
+    rules.forEach { r -> array.put(JSONObject().put("id", r.id).put("title", r.title).put("hour", r.hour).put("minute", r.minute).put("recurring", r.recurring).put("enabled", r.enabled).put("phone", r.phone).put("message", r.message)) }
     context.getSharedPreferences("rules", Context.MODE_PRIVATE).edit().putString("items", array.toString()).apply()
 }
 
 private fun pendingIntent(context: Context, rule: AutomationRule): PendingIntent {
-    val intent = Intent(context, ReminderReceiver::class.java).putExtra("id", rule.id).putExtra("title", rule.title).putExtra("recurring", rule.recurring)
+    val intent = Intent(context, ReminderReceiver::class.java).putExtra("id", rule.id).putExtra("title", rule.title).putExtra("recurring", rule.recurring).putExtra("phone", rule.phone).putExtra("message", rule.message)
     return PendingIntent.getBroadcast(context, rule.id.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 }
 
