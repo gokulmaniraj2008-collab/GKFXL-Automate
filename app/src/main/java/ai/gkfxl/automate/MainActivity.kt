@@ -55,6 +55,7 @@ private fun GKFXLApp() {
     var showConditionMenu by remember { mutableStateOf(false) }
     var tab by remember { mutableIntStateOf(0) }
     var status by remember { mutableStateOf("Your automations stay on this device.") }
+    var showAccessibilityDisclosure by remember { mutableStateOf(false) }
     MaterialTheme(colorScheme = lightColorScheme(primary = Color(0xFF176B55), secondary = Color(0xFF477AAB), background = Color(0xFFF6F8F7), surface = Color.White)) {
         Scaffold(
             topBar = { Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 2.dp) { Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp)) {
@@ -137,7 +138,7 @@ private fun GKFXLApp() {
                             if (!enabled) context.getSharedPreferences("whatsapp_safety", Context.MODE_PRIVATE).edit().remove("armed_message").putLong("armed_until", 0L).apply()
                         })
                     }
-                    OutlinedButton(onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }, modifier = Modifier.fillMaxWidth()) { Text("Open Accessibility Settings") }
+                    OutlinedButton(onClick = { showAccessibilityDisclosure = true }, modifier = Modifier.fillMaxWidth()) { Text("Review disclosure and open Accessibility Settings") }
                     Button(onClick = {
                         val digits = phone.filter { it.isDigit() }
                         if (!autoSendEnabled) status = "Enable send assist first."
@@ -165,6 +166,22 @@ private fun GKFXLApp() {
                     } }
                 }
             }
+        }
+        if (showAccessibilityDisclosure) {
+            AlertDialog(
+                onDismissRequest = { showAccessibilityDisclosure = false },
+                title = { Text("Accessibility send assist - disclosure") },
+                text = { Text("GKFXL Automate uses Android Accessibility access to inspect the visible WhatsApp Messenger screen for the exact message you explicitly arm. If that exact text is in the message composer, it can tap the visible Send button. It does not open chats or compose messages. The one-shot arm expires after 60 seconds and is consumed before the tap. Screen inspection is processed on this device by this service. Only continue if you understand and accept this behavior.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showAccessibilityDisclosure = false
+                        context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                    }) { Text("I understand - continue") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showAccessibilityDisclosure = false }) { Text("Cancel") }
+                }
+            )
         }
     }
 }
