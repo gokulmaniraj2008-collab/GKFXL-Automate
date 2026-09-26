@@ -1,4 +1,4 @@
 <resources>
     <string name="whatsapp_accessibility_description">Allows one-shot WhatsApp send assist when explicitly armed.</string>
-    <string name="whatsapp_notification_listener_description">Reads WhatsApp notification previews and can send an enabled automatic reply using WhatsApp's notification reply action.</string>
+    <string name="whatsapp_notification_listener_description">Reads WhatsApp notification previews and can send an enabled automatic reply using WhatsApp&apos;s notification reply action.</string>
 </resources>
