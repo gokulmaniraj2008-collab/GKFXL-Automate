@@ -11,7 +11,7 @@ import android.view.accessibility.AccessibilityNodeInfo
  */
 class WhatsAppSendAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if (event == null || event.packageName?.toString() != "com.whatsapp") return
+        if (event == null || event.packageName?.toString() != "com.whatsapp.w4b") return
         val prefs = getSharedPreferences("whatsapp_safety", MODE_PRIVATE)
         if (!prefs.getBoolean("enabled", false)) return
         val expires = prefs.getLong("armed_until", 0L)
