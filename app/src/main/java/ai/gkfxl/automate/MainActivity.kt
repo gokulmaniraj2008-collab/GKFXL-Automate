@@ -184,14 +184,18 @@ private fun WhatsAppAppSettings(context: Context, appKey: String, appTitle: Stri
             Text("Read notifications", modifier = Modifier.weight(1f))
             Switch(checked = readingEnabled, onCheckedChange = { v -> readingEnabled = v; prefs.edit().putBoolean("${appKey}_reading_enabled", v).apply() })
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Enable auto-reply", modifier = Modifier.weight(1f))
-            Switch(checked = replyEnabled, onCheckedChange = { v -> replyEnabled = v; prefs.edit().putBoolean("${appKey}_auto_reply_enabled", v).apply() })
-        }
-        OutlinedTextField(value = replyText, onValueChange = { v -> replyText = v; prefs.edit().putString("${appKey}_reply_text", v).apply() }, label = { Text("Reply message") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Require approval (save draft only)", modifier = Modifier.weight(1f))
-            Switch(checked = approvalRequired, onCheckedChange = { v -> approvalRequired = v; prefs.edit().putBoolean("${appKey}_approval_required", v).apply() })
+        if (appKey == "business") {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Enable auto-reply", modifier = Modifier.weight(1f))
+                Switch(checked = replyEnabled, onCheckedChange = { v -> replyEnabled = v; prefs.edit().putBoolean("${appKey}_auto_reply_enabled", v).apply() })
+            }
+            OutlinedTextField(value = replyText, onValueChange = { v -> replyText = v; prefs.edit().putString("${appKey}_reply_text", v).apply() }, label = { Text("Business auto-reply message") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Require approval (save draft only)", modifier = Modifier.weight(1f))
+                Switch(checked = approvalRequired, onCheckedChange = { v -> approvalRequired = v; prefs.edit().putBoolean("${appKey}_approval_required", v).apply() })
+            }
+        } else {
+            Text("Auto-reply is available only for WhatsApp Business. Messenger notifications can still be read.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         if (latestMessage != null) {
             Text("Latest: ${latestSender ?: "Unknown"}", fontWeight = FontWeight.Medium)
