@@ -11,11 +11,9 @@ import android.service.notification.StatusBarNotification
 /** Reads notification previews separately for WhatsApp Messenger and Business. */
 class WhatsAppNotificationService : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification) {
-        val app = when (sbn.packageName) {
-            MESSENGER_PACKAGE -> "messenger"
-            BUSINESS_PACKAGE -> "business"
-            else -> return
-        }
+        // This build intentionally supports WhatsApp Business only.
+        if (sbn.packageName != BUSINESS_PACKAGE) return
+        val app = "business"
         val prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         if (!prefs.getBoolean("${app}_reading_enabled", true)) return
 
@@ -30,7 +28,8 @@ class WhatsAppNotificationService : NotificationListenerService() {
             .putString("${app}_last_message", message)
             .putLong("${app}_last_received", System.currentTimeMillis()).apply()
 
-        // Automatic replies are intentionally restricted to WhatsApp Business.\n        if (app != "business") return\n        if (!prefs.getBoolean("${app}_auto_reply_enabled", false)) return
+        // Automatic replies are restricted to WhatsApp Business and are opt-in.
+        if (!prefs.getBoolean("${app}_auto_reply_enabled", false)) return
 
         val cooldownKey = "${app}_last_reply_" + sender.hashCode()
         val now = System.currentTimeMillis()
@@ -64,7 +63,6 @@ class WhatsAppNotificationService : NotificationListenerService() {
     }
 
     companion object {
-        const val MESSENGER_PACKAGE = "com.whatsapp"
         const val BUSINESS_PACKAGE = "com.whatsapp.w4b"
         const val PREFS = "whatsapp_notifications"
         private const val COOLDOWN_MS = 10 * 60 * 1000L
