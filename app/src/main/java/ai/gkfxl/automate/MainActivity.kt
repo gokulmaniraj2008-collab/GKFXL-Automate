@@ -111,42 +111,8 @@ private fun GKFXLApp() {
                     Text("Configure Messenger and Business independently. Notification access is granted once for this app.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     val notificationPrefs = remember { context.getSharedPreferences("whatsapp_notifications", Context.MODE_PRIVATE) }
 
-                    @Composable
-                    fun appSettings(appKey: String, appTitle: String) {
-                        var readingEnabled by remember { mutableStateOf(notificationPrefs.getBoolean("${appKey}_reading_enabled", true)) }
-                        var replyEnabled by remember { mutableStateOf(notificationPrefs.getBoolean("${appKey}_auto_reply_enabled", false)) }
-                        var replyText by remember { mutableStateOf(notificationPrefs.getString("${appKey}_reply_text", "Thanks for your message! I'll reply soon.") ?: "") }
-                        var approvalRequired by remember { mutableStateOf(notificationPrefs.getBoolean("${appKey}_approval_required", true)) }
-                        val latestSender = notificationPrefs.getString("${appKey}_last_sender", null)
-                        val latestMessage = notificationPrefs.getString("${appKey}_last_message", null)
-                        Card { Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(appTitle, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Read notifications", modifier = Modifier.weight(1f))
-                                Switch(checked = readingEnabled, onCheckedChange = { v -> readingEnabled = v; notificationPrefs.edit().putBoolean("${appKey}_reading_enabled", v).apply() })
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Enable auto-reply", modifier = Modifier.weight(1f))
-                                Switch(checked = replyEnabled, onCheckedChange = { v -> replyEnabled = v; notificationPrefs.edit().putBoolean("${appKey}_auto_reply_enabled", v).apply() })
-                            }
-                            OutlinedTextField(value = replyText, onValueChange = { v -> replyText = v; notificationPrefs.edit().putString("${appKey}_reply_text", v).apply() }, label = { Text("Reply message") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Require approval (save draft only)", modifier = Modifier.weight(1f))
-                                Switch(checked = approvalRequired, onCheckedChange = { v -> approvalRequired = v; notificationPrefs.edit().putBoolean("${appKey}_approval_required", v).apply() })
-                            }
-                            if (latestMessage != null) {
-                                Text("Latest: ${latestSender ?: "Unknown"}", fontWeight = FontWeight.Medium)
-                                Text(latestMessage, style = MaterialTheme.typography.bodySmall)
-                            } else Text("No notification captured yet.", style = MaterialTheme.typography.bodySmall)
-                            val pendingReply = notificationPrefs.getString("${appKey}_pending_reply", null)
-                            if (pendingReply != null) {
-                                Text("Pending reply for ${notificationPrefs.getString("${appKey}_pending_sender", "contact")}: $pendingReply", style = MaterialTheme.typography.bodySmall)
-                                OutlinedButton(onClick = { notificationPrefs.edit().remove("${appKey}_pending_reply").remove("${appKey}_pending_sender").apply() }) { Text("Dismiss draft") }
-                            }
-                        } }
-                    }
-                    appSettings("messenger", "WhatsApp Messenger")
-                    appSettings("business", "WhatsApp Business")
+                    WhatsAppAppSettings(context, "messenger", "WhatsApp Messenger")
+                    WhatsAppAppSettings(context, "business", "WhatsApp Business")
                     OutlinedButton(onClick = { context.startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")) }, modifier = Modifier.fillMaxWidth()) { Text("Grant notification access") }
                     Text("Privacy: notification contents are stored locally in app preferences. Gemini-generated replies are not enabled in this build. Approval mode prevents automatic sending; turn it off only when you intentionally want unattended replies. Auto-replies have a 10-minute per-sender cooldown.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     HorizontalDivider()
@@ -201,6 +167,42 @@ private fun GKFXLApp() {
             }
         }
     }
+}
+
+@Composable
+private fun WhatsAppAppSettings(context: Context, appKey: String, appTitle: String) {
+    val prefs = remember { context.getSharedPreferences("whatsapp_notifications", Context.MODE_PRIVATE) }
+    var readingEnabled by remember(appKey) { mutableStateOf(prefs.getBoolean("${appKey}_reading_enabled", true)) }
+    var replyEnabled by remember(appKey) { mutableStateOf(prefs.getBoolean("${appKey}_auto_reply_enabled", false)) }
+    var replyText by remember(appKey) { mutableStateOf(prefs.getString("${appKey}_reply_text", "Thanks for your message! I'll reply soon.") ?: "") }
+    var approvalRequired by remember(appKey) { mutableStateOf(prefs.getBoolean("${appKey}_approval_required", true)) }
+    val latestSender = prefs.getString("${appKey}_last_sender", null)
+    val latestMessage = prefs.getString("${appKey}_last_message", null)
+    Card { Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(appTitle, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Read notifications", modifier = Modifier.weight(1f))
+            Switch(checked = readingEnabled, onCheckedChange = { v -> readingEnabled = v; prefs.edit().putBoolean("${appKey}_reading_enabled", v).apply() })
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Enable auto-reply", modifier = Modifier.weight(1f))
+            Switch(checked = replyEnabled, onCheckedChange = { v -> replyEnabled = v; prefs.edit().putBoolean("${appKey}_auto_reply_enabled", v).apply() })
+        }
+        OutlinedTextField(value = replyText, onValueChange = { v -> replyText = v; prefs.edit().putString("${appKey}_reply_text", v).apply() }, label = { Text("Reply message") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Require approval (save draft only)", modifier = Modifier.weight(1f))
+            Switch(checked = approvalRequired, onCheckedChange = { v -> approvalRequired = v; prefs.edit().putBoolean("${appKey}_approval_required", v).apply() })
+        }
+        if (latestMessage != null) {
+            Text("Latest: ${latestSender ?: "Unknown"}", fontWeight = FontWeight.Medium)
+            Text(latestMessage, style = MaterialTheme.typography.bodySmall)
+        } else Text("No notification captured yet.", style = MaterialTheme.typography.bodySmall)
+        val pendingReply = prefs.getString("${appKey}_pending_reply", null)
+        if (pendingReply != null) {
+            Text("Pending reply for ${prefs.getString("${appKey}_pending_sender", "contact")}: $pendingReply", style = MaterialTheme.typography.bodySmall)
+            OutlinedButton(onClick = { prefs.edit().remove("${appKey}_pending_reply").remove("${appKey}_pending_sender").apply() }) { Text("Dismiss draft") }
+        }
+    } }
 }
 
 private fun loadRules(context: Context): List<AutomationRule> = try {
