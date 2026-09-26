@@ -30,7 +30,7 @@ class WhatsAppNotificationService : NotificationListenerService() {
             .putString("${app}_last_message", message)
             .putLong("${app}_last_received", System.currentTimeMillis()).apply()
 
-        if (!prefs.getBoolean("${app}_auto_reply_enabled", false)) return
+        // Automatic replies are intentionally restricted to WhatsApp Business.\n        if (app != "business") return\n        if (!prefs.getBoolean("${app}_auto_reply_enabled", false)) return
 
         val cooldownKey = "${app}_last_reply_" + sender.hashCode()
         val now = System.currentTimeMillis()
