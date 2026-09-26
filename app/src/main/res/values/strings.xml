@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="whatsapp_accessibility_description">Optional one-shot WhatsApp send assist. When explicitly armed, it may tap Send for the exact message you prepared.</string>
+</resources>
