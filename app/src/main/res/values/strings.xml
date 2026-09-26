@@ -1,4 +1,6 @@
 <resources>
-    <string name="whatsapp_accessibility_description">Allows one-shot WhatsApp send assist when explicitly armed.</string>
-    <string name="whatsapp_notification_listener_description">Reads WhatsApp notification previews and can send an enabled automatic reply through the notification reply action.</string>
+    <string name="whatsapp_accessibility_label">GKFXL WhatsApp Send Assist</string>
+    <string name="whatsapp_accessibility_description">Optional one-shot assist for WhatsApp Messenger. When the user explicitly arms a message, this service checks the visible WhatsApp screen for that exact composer text and may tap Send. It does not open chats or compose messages.</string>
+    <string name="whatsapp_notification_listener_label">GKFXL WhatsApp Notification Access</string>
+    <string name="whatsapp_notification_listener_description">Reads notification previews only from WhatsApp Messenger and WhatsApp Business to show them in GKFXL Automate. If the user separately enables WhatsApp Business auto-replies, it may reply using that notification action. Notification text is saved locally on this device.</string>
 </resources>
