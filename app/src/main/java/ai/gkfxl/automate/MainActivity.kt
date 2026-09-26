@@ -30,7 +30,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Calendar
 
-data class AutomationRule(val id: Long, val title: String, val hour: Int, val minute: Int, val recurring: Boolean, val enabled: Boolean, val phone: String = "", val message: String = "")
+data class AutomationRule(val id: Long, val title: String, val hour: Int, val minute: Int, val recurring: Boolean, val enabled: Boolean, val phone: String = "", val message: String = "", val actions: String = "Notification", val condition: String = "Always")
 
 class MainActivity : ComponentActivity() {
     private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -50,6 +50,9 @@ private fun GKFXLApp() {
     var recurring by remember { mutableStateOf(true) }
     var phone by remember { mutableStateOf("") }
     var message by remember { mutableStateOf("Hello") }
+    var actions by remember { mutableStateOf(setOf("Notification", "WhatsApp")) }
+    var condition by remember { mutableStateOf("Always") }
+    var showConditionMenu by remember { mutableStateOf(false) }
     var tab by remember { mutableIntStateOf(0) }
     var status by remember { mutableStateOf("Your automations stay on this device.") }
     MaterialTheme(colorScheme = lightColorScheme(primary = Color(0xFF176B55), secondary = Color(0xFF477AAB), background = Color(0xFFF6F8F7), surface = Color.White)) {
@@ -71,16 +74,20 @@ private fun GKFXLApp() {
                         OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Rule name") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                         OutlinedTextField(value = time, onValueChange = { time = it }, label = { Text("Time (24-hour HH:mm)") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                         Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(checked = recurring, onCheckedChange = { recurring = it }); Text("Repeat every day") }
+                        Text("Actions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        listOf("Notification", "WhatsApp", "Open URL").forEach { action -> Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(checked = action in actions, onCheckedChange = { checked -> actions = if (checked) actions + action else actions - action }); Text(action) } }
+                        Text("Condition (IF)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Box { OutlinedButton(onClick = { showConditionMenu = true }, modifier = Modifier.fillMaxWidth()) { Text(condition) }; DropdownMenu(expanded = showConditionMenu, onDismissRequest = { showConditionMenu = false }) { listOf("Always", "Battery below 20%", "Battery below 50%", "Battery above 50%").forEach { item -> DropdownMenuItem(text = { Text(item) }, onClick = { condition = item; showConditionMenu = false }) } } }
                         Text("Optional WhatsApp reminder", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("WhatsApp number (with country code)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone), modifier = Modifier.fillMaxWidth(), singleLine = true)
                         OutlinedTextField(value = message, onValueChange = { message = it }, label = { Text("Message to prepare") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
-                        Text("At the scheduled time, a notification appears. Tap it to open WhatsApp with the message ready; you still need to tap Send.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Choose multiple actions and an optional battery condition. WhatsApp opens with your message prepared; you must tap Send. URL actions can be configured in the next engine update.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Button(onClick = {
                             val parts = time.split(":"); val hour = parts.getOrNull(0)?.toIntOrNull(); val minute = parts.getOrNull(1)?.toIntOrNull()
                             if (title.isBlank() || hour == null || minute == null || hour !in 0..23 || minute !in 0..59) status = "Enter a name and valid time, such as 19:00."
                             else {
                                 val digits = phone.filter { it.isDigit() }; val cleanPhone = if (digits.startsWith("00")) digits.drop(2) else digits
-                                val rule = AutomationRule(System.currentTimeMillis(), title.trim(), hour, minute, recurring, true, cleanPhone, message.trim())
+                                val rule = AutomationRule(System.currentTimeMillis(), title.trim(), hour, minute, recurring, true, cleanPhone, message.trim(), actions.joinToString("|"), condition)
                                 rules = rules + rule; saveRules(context, rules); schedule(context, rule)
                                 status = "Reminder saved. Check Android alarm and notification permissions."
                             }
@@ -90,7 +97,7 @@ private fun GKFXLApp() {
                     if (rules.isEmpty()) item { Text("No rules yet. Create your first reminder above.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     items(rules, key = { it.id }) { rule -> Card { Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Column(Modifier.weight(1f)) { Text(rule.title, fontWeight = FontWeight.SemiBold); Text("%02d:%02d • %s".format(rule.hour, rule.minute, if (rule.recurring) "Daily" else "One time"), color = MaterialTheme.colorScheme.onSurfaceVariant); if (rule.phone.isNotBlank()) Text("WhatsApp: ${rule.phone}", style = MaterialTheme.typography.bodySmall) }
+                            Column(Modifier.weight(1f)) { Text(rule.title, fontWeight = FontWeight.SemiBold); Text("%02d:%02d • %s".format(rule.hour, rule.minute, if (rule.recurring) "Daily" else "One time"), color = MaterialTheme.colorScheme.onSurfaceVariant); if (rule.phone.isNotBlank()) Text("WhatsApp: ${rule.phone}", style = MaterialTheme.typography.bodySmall); Text("Actions: ${rule.actions}", style = MaterialTheme.typography.bodySmall); Text("IF: ${rule.condition}", style = MaterialTheme.typography.bodySmall) }
                             Switch(checked = rule.enabled, onCheckedChange = { enabled ->
                                 val updated = rules.map { if (it.id == rule.id) it.copy(enabled = enabled) else it }; rules = updated; saveRules(context, updated)
                                 if (enabled) schedule(context, rule.copy(enabled = true)) else cancel(context, rule)
@@ -129,12 +136,12 @@ private fun GKFXLApp() {
 
 private fun loadRules(context: Context): List<AutomationRule> = try {
     val array = JSONArray(context.getSharedPreferences("rules", Context.MODE_PRIVATE).getString("items", "[]"))
-    (0 until array.length()).map { i -> val o = array.getJSONObject(i); AutomationRule(o.getLong("id"), o.getString("title"), o.getInt("hour"), o.getInt("minute"), o.getBoolean("recurring"), o.getBoolean("enabled"), o.optString("phone", ""), o.optString("message", "")) }
+    (0 until array.length()).map { i -> val o = array.getJSONObject(i); AutomationRule(o.getLong("id"), o.getString("title"), o.getInt("hour"), o.getInt("minute"), o.getBoolean("recurring"), o.getBoolean("enabled"), o.optString("phone", ""), o.optString("message", ""), o.optString("actions", "Notification"), o.optString("condition", "Always")) }
 } catch (_: Exception) { emptyList() }
 
 private fun saveRules(context: Context, rules: List<AutomationRule>) {
     val array = JSONArray()
-    rules.forEach { r -> array.put(JSONObject().put("id", r.id).put("title", r.title).put("hour", r.hour).put("minute", r.minute).put("recurring", r.recurring).put("enabled", r.enabled).put("phone", r.phone).put("message", r.message)) }
+    rules.forEach { r -> array.put(JSONObject().put("id", r.id).put("title", r.title).put("hour", r.hour).put("minute", r.minute).put("recurring", r.recurring).put("enabled", r.enabled).put("phone", r.phone).put("message", r.message).put("actions", r.actions).put("condition", r.condition)) }
     context.getSharedPreferences("rules", Context.MODE_PRIVATE).edit().putString("items", array.toString()).apply()
 }
 
