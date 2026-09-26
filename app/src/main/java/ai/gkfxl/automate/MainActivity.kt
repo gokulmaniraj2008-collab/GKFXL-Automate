@@ -107,6 +107,30 @@ private fun GKFXLApp() {
                     } } }
                 }
                 1 -> Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("WhatsApp message reader & auto-reply", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                    Text("Reads notification previews without opening WhatsApp. Auto-reply uses WhatsApp's notification reply action when available.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    val notificationPrefs = remember { context.getSharedPreferences("whatsapp_notifications", Context.MODE_PRIVATE) }
+                    var autoReplyEnabled by remember { mutableStateOf(notificationPrefs.getBoolean("auto_reply_enabled", false)) }
+                    var autoReplyText by remember { mutableStateOf(notificationPrefs.getString("auto_reply_text", "Thanks for your message! I'll reply soon.") ?: "") }
+                    val latestSender = notificationPrefs.getString("last_sender", null)
+                    val latestMessage = notificationPrefs.getString("last_message", null)
+                    Card { Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Enable automatic reply", modifier = Modifier.weight(1f))
+                            Switch(checked = autoReplyEnabled, onCheckedChange = { enabled ->
+                                autoReplyEnabled = enabled
+                                notificationPrefs.edit().putBoolean("auto_reply_enabled", enabled).apply()
+                            })
+                        }
+                        OutlinedTextField(value = autoReplyText, onValueChange = { autoReplyText = it; notificationPrefs.edit().putString("auto_reply_text", it).apply() }, label = { Text("Auto-reply message") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
+                        OutlinedButton(onClick = { context.startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")) }, modifier = Modifier.fillMaxWidth()) { Text("Grant notification access") }
+                        if (latestMessage != null) {
+                            Text("Latest notification: ${latestSender ?: "Unknown"}", fontWeight = FontWeight.SemiBold)
+                            Text(latestMessage, style = MaterialTheme.typography.bodySmall)
+                        } else Text("No WhatsApp notification captured yet.", style = MaterialTheme.typography.bodySmall)
+                        Text("Safety: replies are limited to one per sender every 10 minutes. Keep auto-reply off until you test with a trusted contact. Notification text may contain private information.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    } }
+                    HorizontalDivider()
                     Text("Prepare a WhatsApp message", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
                     Text("This opens WhatsApp with your message filled in. You must review it and tap Send.")
                     OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Phone number with country code") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone), modifier = Modifier.fillMaxWidth())
