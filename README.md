@@ -33,3 +33,11 @@ Calls are synchronous and must run on a background thread. Session persistence, 
 
 ## Build
 Open in Android Studio, sync Gradle, then build the debug APK. GitHub Actions builds the debug APK on pushes to `main`.
+
+## WhatsApp permissions and privacy
+- Notification access is optional and must be enabled by the user in Android Settings. The listener processes notifications only from WhatsApp Messenger and WhatsApp Business; captured sender/message previews are stored in local app preferences.
+- WhatsApp Business auto-replies are off by default. When approval is required (the default), a reply draft is saved instead of sent. Turning approval off allows an automatic reply only when WhatsApp exposes a usable notification reply action. A 10-minute per-sender cooldown applies.
+- Accessibility Send Assist is optional and off by default, and is scoped to WhatsApp Messenger. Before opening Android Accessibility Settings, the app displays a separate disclosure requiring an affirmative tap. The service checks for the exact user-armed composer text and can tap Send once; the arm expires after 60 seconds and is consumed before the tap. It does not open chats or compose messages.
+- These services process notification previews and screen inspection locally. Review this statement if future versions add data sharing or cloud processing.
+- These permissions are sensitive. Do not describe this APK as Play Protect-approved. Play Protect may still block internet-sideloaded builds that declare notification-listener or accessibility services. Review Google's official guidance and appeal process after policy and privacy review: https://developers.google.com/android/play-protect/warning-dev-guidance
+- Before Google Play release, complete the relevant Play Console declarations, privacy policy, Data safety disclosures, and Accessibility API declaration/disclosure requirements. This app is a general automation utility, not an accessibility tool; do not mark it as one.
