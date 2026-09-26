@@ -1,29 +1,35 @@
 # GKFXL Automate
 
-A light-themed Android automation app inspired by MacroDroid.
+A native Android automation app written in Kotlin with Jetpack Compose. GitHub is the source of truth for this project.
 
-## Project goals
+## Current starter features
 
-- Create, edit, enable, disable, and delete automation rules.
-- Schedule one-time or recurring time-based triggers.
-- Show local notifications and reminders.
-- Open selected apps when supported by Android.
-- Prepare WhatsApp messages with a recipient and message, then open WhatsApp for the user to review and tap **Send**.
-- Keep rules and run history stored locally on the device.
-- Provide a permissions/status screen for notifications, exact alarms, and battery optimization.
+- Light-theme-only Android UI.
+- Create daily or one-time time-based reminder rules.
+- Enable, disable, and delete saved rules.
+- Local persistence using Android SharedPreferences.
+- Scheduled reminders delivered as Android notifications.
+- WhatsApp deep-link composer: opens a chat with a prefilled message; the user must tap **Send**.
+- Permission guidance for notifications and exact alarms.
 
-## Safety and platform notes
+## Build
 
-- WhatsApp messages are not sent silently by this app. The user reviews and confirms sending in WhatsApp.
-- Android may restrict background execution, exact alarms, and app launching. The app must explain and request only the permissions it needs.
-- Automation reliability depends on Android version, device settings, and battery restrictions.
+Open this repository in Android Studio (Hedgehog or newer), allow Gradle sync, then run the app configuration on an Android device or emulator. To produce an APK, use the Android Studio Build menu and select Build APK(s).
 
-## Design
+- Android Gradle Plugin: 8.7.3
+- Kotlin: 2.0.21
+- Compile/target SDK: 35
+- Minimum SDK: 26
 
-- Light theme only.
-- Mobile-first interface.
-- Clear rule cards, status indicators, and run history.
+## Important limitations
 
-## Status
+- Android may delay alarms due to battery restrictions, Doze, reboot, or manufacturer-specific background policies.
+- This starter does not yet restore scheduled alarms after device reboot.
+- Exact alarms may require the user to grant access in Android Settings.
+- Android 13+ requires notification permission.
+- WhatsApp is never sent a message silently; the user reviews and taps Send.
+- The current starter schedules reminder actions only. Additional action types and a richer run-history screen can be added in future commits.
 
-Repository initialized. App implementation and Android build setup are to be added.
+## Repository
+
+https://github.com/gokulmaniraj2008-collab/GKFXL-Automate
