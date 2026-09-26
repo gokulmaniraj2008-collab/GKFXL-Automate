@@ -32,8 +32,8 @@ class WhatsAppNotificationService : NotificationListenerService() {
             .putString("last_message", text).putLong("last_received", System.currentTimeMillis()).apply()
 
         if (!prefs.getBoolean("auto_reply_enabled", false)) return
-        if (prefs.getBoolean("reply_only_once_per_sender", true) &&
-            prefs.getStringSet("replied_senders", emptySet())?.contains(title) == true) return
+        val cooldownKey = "last_reply_" + title.hashCode()
+        if (System.currentTimeMillis() - prefs.getLong(cooldownKey, 0L) < 10 * 60 * 1000L) return
 
         val replyText = prefs.getString("auto_reply_text", "").orEmpty().trim()
         if (replyText.isBlank()) return
@@ -44,23 +44,13 @@ class WhatsAppNotificationService : NotificationListenerService() {
         } ?: return
 
         val remoteInputs = action.remoteInputs ?: return
-        val intent = android.app.PendingIntent.getBroadcast(
-            this, (sbn.key + replyText).hashCode(),
-            android.content.Intent(this, NotificationReplyReceiver::class.java)
-                .setAction("ai.gkfxl.automate.REPLY")
-                .putExtra("notification_key", sbn.key)
-                .putExtra("sender", title),
-            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_MUTABLE
-        )
-        val replyAction = Action.Builder(action.icon, action.title, intent).addRemoteInput(remoteInputs.first()).build()
         val fillIn = android.content.Intent()
         val results = Bundle()
         remoteInputs.forEach { input -> results.putCharSequence(input.resultKey, replyText) }
         RemoteInput.addResultsToIntent(remoteInputs, fillIn, results)
         try {
-            intent.send(this, 0, fillIn)
-            prefs.edit().putStringSet("replied_senders",
-                (prefs.getStringSet("replied_senders", emptySet()) ?: emptySet()).toMutableSet().apply { add(title) }).apply()
+            action.actionIntent.send(this, 0, fillIn)
+            prefs.edit().putLong(cooldownKey, System.currentTimeMillis()).apply()
         } catch (_: Exception) {
             // Unsupported/stale notification actions are ignored; no fallback opens WhatsApp.
         }
