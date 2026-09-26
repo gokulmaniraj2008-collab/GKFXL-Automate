@@ -116,7 +116,33 @@ private fun GKFXLApp() {
                         if (digits.isBlank() || message.isBlank()) status = "Enter a phone number and message."
                         else try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$digits?text=" + Uri.encode(message)))) } catch (_: Exception) { status = "WhatsApp could not be opened. Install or enable WhatsApp." }
                     }, modifier = Modifier.fillMaxWidth()) { Text("Open WhatsApp") }
-                    Text("No message is sent automatically.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    HorizontalDivider()
+                    Text("Accessibility send assist (optional)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text("When enabled, the service can tap Send once only if the exact message is visible in WhatsApp. You must open the intended chat yourself. Keep this disabled unless you understand the risk of sending to the wrong chat.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    var autoSendEnabled by remember { mutableStateOf(context.getSharedPreferences("whatsapp_safety", Context.MODE_PRIVATE).getBoolean("enabled", false)) }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Enable send assist", modifier = Modifier.weight(1f))
+                        Switch(checked = autoSendEnabled, onCheckedChange = { enabled ->
+                            autoSendEnabled = enabled
+                            context.getSharedPreferences("whatsapp_safety", Context.MODE_PRIVATE).edit().putBoolean("enabled", enabled).apply()
+                            if (!enabled) context.getSharedPreferences("whatsapp_safety", Context.MODE_PRIVATE).edit().remove("armed_message").putLong("armed_until", 0L).apply()
+                        })
+                    }
+                    OutlinedButton(onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }, modifier = Modifier.fillMaxWidth()) { Text("Open Accessibility Settings") }
+                    Button(onClick = {
+                        val digits = phone.filter { it.isDigit() }
+                        if (!autoSendEnabled) status = "Enable send assist first."
+                        else if (digits.isBlank() || message.isBlank()) status = "Enter a phone number and message."
+                        else {
+                            context.getSharedPreferences("whatsapp_safety", Context.MODE_PRIVATE).edit()
+                                .putString("armed_message", message.trim())
+                                .putLong("armed_until", System.currentTimeMillis() + 60_000L).apply()
+                            try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$digits?text=" + Uri.encode(message.trim())))) }
+                            catch (_: Exception) { status = "Could not open WhatsApp." }
+                        }
+                    }, modifier = Modifier.fillMaxWidth()) { Text("Arm one send (60 seconds) & open WhatsApp") }
+                    Text("The one-shot arm expires after 60 seconds and is consumed before a tap. Android may restrict or alter this behavior; test with a trusted contact first.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Automatic sending is off until you enable it and grant Accessibility access.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 else -> Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("Permissions & status", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
