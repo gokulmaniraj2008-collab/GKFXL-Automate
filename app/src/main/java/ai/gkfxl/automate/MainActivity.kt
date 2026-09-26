@@ -146,7 +146,7 @@ private fun saveRules(context: Context, rules: List<AutomationRule>) {
 }
 
 private fun pendingIntent(context: Context, rule: AutomationRule): PendingIntent {
-    val intent = Intent(context, ReminderReceiver::class.java).putExtra("id", rule.id).putExtra("title", rule.title).putExtra("recurring", rule.recurring).putExtra("phone", rule.phone).putExtra("message", rule.message)
+    val intent = Intent(context, ReminderReceiver::class.java).putExtra("id", rule.id).putExtra("title", rule.title).putExtra("recurring", rule.recurring).putExtra("phone", rule.phone).putExtra("message", rule.message).putExtra("actions", rule.actions).putExtra("condition", rule.condition)
     return PendingIntent.getBroadcast(context, rule.id.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 }
 
